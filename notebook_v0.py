@@ -7,6 +7,7 @@ starter code for your evaluation assignment
 
 # Python Standard Library
 import base64
+from cgitb import reset
 import io
 import json
 import pprint
@@ -50,7 +51,9 @@ def load_ipynb(filename):
          'nbformat': 4,
          'nbformat_minor': 5}
     """
-    pass
+    with open(filename, 'r') as f:
+        dic  = json.load(f)
+    return dic
 
 
 def save_ipynb(ipynb, filename):
@@ -73,7 +76,10 @@ def save_ipynb(ipynb, filename):
         True
 
     """
-    pass
+    with open(filename, 'w+') as file:
+        json.dump(ipynb, file)
+
+
 
 
 def get_format_version(ipynb):
@@ -90,7 +96,7 @@ def get_format_version(ipynb):
         >>> get_format_version(ipynb)
         '4.5'
     """
-    pass
+    return f"""{ipynb['nbformat']}.{ipynb['nbformat_minor']}"""
 
 
 def get_metadata(ipynb):
@@ -114,7 +120,7 @@ def get_metadata(ipynb):
                            'pygments_lexer': 'ipython3',
                            'version': '3.9.7'}}
     """
-    pass
+    return ipynb['metadata']
 
 
 def get_cells(ipynb):
@@ -148,7 +154,7 @@ def get_cells(ipynb):
           'metadata': {},
           'source': ['Goodbye! 👋']}]
     """
-    pass
+    return ipynb['cells']
 
 
 def to_percent(ipynb):
@@ -175,7 +181,20 @@ def to_percent(ipynb):
         ...     with open(notebook_file.with_suffix(".py"), "w", encoding="utf-8") as output:
         ...         print(percent_code, file=output)
     """
-    pass
+    cells = get_cells(ipynb)
+    res = ""
+    for element in cells :
+        if element['cell_type'] == 'markdown':
+            res += '# %% [markdown]\n'
+            for ligne in element['source']:
+                res = res + '# ' + ligne 
+            res += '\n\n'
+        else:
+            res += '# %%\n'
+            for ligne in element['source']:
+                res += ligne
+            res += '\n\n'
+    return res 
 
 
 def starboard_html(code):
@@ -232,7 +251,22 @@ def to_starboard(ipynb, html=False):
         ...     with open(notebook_file.with_suffix(".html"), "w", encoding="utf-8") as output:
         ...         print(starboard_html, file=output)
     """
-    pass
+    cells  = get_cells(ipynb)
+    res = ""
+    for element in cells:
+        if element['cell_type'] == 'markdown':
+            res += '# %% [markdown]\n'
+            for ligne in element['source']:
+                res += ligne
+            res += '\n'
+        else:
+            res += '# %% [python]\n'
+            for ligne in element['source']:
+                res += ligne 
+            res += '\n'
+    if html == True :
+        return starboard_html(res)
+    return res
 
 
 # Outputs
@@ -288,7 +322,11 @@ def clear_outputs(ipynb):
          'nbformat': 4,
          'nbformat_minor': 5}
     """
-    pass
+    cells = get_cells(ipynb)
+    for element in cells :
+        if element['cell_type'] == 'code':
+            element['outputs'] = []
+            element['execution_count'] = None
 
 
 def get_stream(ipynb, stdout=True, stderr=False):
@@ -306,7 +344,15 @@ def get_stream(ipynb, stdout=True, stderr=False):
         👋 Hello world! 🌍
         🔥 This is fine. 🔥 (https://gunshowcomic.com/648)
     """
-    pass
+    res = ""
+    for cell in ipynb['cells']:
+        if cell['outputs'][0]['name'] == 'stdout' and stdout == True:
+            res += cell['outputs'][0]['text'][0]
+        elif cell['outputs'][0]['name'] == 'stderr' and stderr == True:
+            res += cell['outputs'][0]['text'][0]
+    return res
+
+    
 
 
 def get_exceptions(ipynb):
@@ -328,7 +374,7 @@ def get_exceptions(ipynb):
         TypeError("unsupported operand type(s) for +: 'int' and 'str'")
         Warning('🌧️  light rain')
     """
-    pass
+    
 
 
 def get_images(ipynb):
